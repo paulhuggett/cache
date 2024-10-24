@@ -22,8 +22,10 @@
 // Standard library: for quick and dirty trace output
 #include <iostream>
 
+/// \tparam UInt An unsigned integer type.
+/// \param n An integer value to check whether it is a power of two.
 /// \returns True if the input value is a power of 2.
-template <std::unsigned_integral Ty> constexpr bool is_power_of_two(Ty n) noexcept {
+template <std::unsigned_integral UInt> constexpr bool is_power_of_two(UInt n) noexcept {
   //  if a number n is a power of 2 then bitwise & of n and n-1 will be zero.
   return n > 0U && !(n & (n - 1U));
 }
@@ -138,15 +140,21 @@ public:
       return *this;
     }
 
-    iterator_type operator+(difference_type n) const {
-      auto result = *this;
+    friend iterator_type operator+(iterator_type it, difference_type n) {
+      auto result = it;
       result += n;
       return result;
     }
-    iterator_type operator-(difference_type n) const {
-      auto result = *this;
+    friend iterator_type operator+(difference_type n, iterator_type it) {
+      return it + n;
+    }
+    friend iterator_type operator-(iterator_type it, difference_type n) {
+      auto result = it;
       result -= n;
       return result;
+    }
+    friend iterator_type operator-(difference_type n, iterator_type it) {
+      return it - n;
     }
 
     T *raw() { return slot_; }
