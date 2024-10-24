@@ -13,7 +13,6 @@
 #include <bit>
 #include <cassert>
 #include <cstddef>
-#include <new>
 #include <utility>
 
 #ifndef NDEBUG
@@ -39,7 +38,7 @@ public:
 
   void clear();
   [[nodiscard]] constexpr std::size_t size() const noexcept { return size_; }
-  void touch(node *const n);
+  void touch(node *n);
 
   template <typename Evictor = void(ValueType *)> node *add(ValueType &&payload, Evictor evictor);
 
@@ -59,7 +58,8 @@ private:
 // clear
 // ~~~~~
 template <typename ValueType, std::size_t Size> void lru_list<ValueType, Size>::clear() {
-  std::for_each(&v_[0], &v_[0] + size_, [](node *const n) {
+  auto *const data = v_.data();
+  std::for_each(data, data + size_, [](node *const n) {
     n->value()->~ValueType();  // Evict the old value. Bye bye.
   });
   size_ = 0;

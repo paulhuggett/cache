@@ -1,12 +1,5 @@
 // Standard library
-#include <array>
-#include <bit>
 #include <cassert>
-#include <compare>
-#include <cstddef>
-#include <functional>
-#include <iterator>
-#include <type_traits>
 #include <utility>
 
 // Standard library
@@ -15,6 +8,8 @@
 #include <string>
 
 #include "cache.hpp"
+#include "iumap.hpp"
+#include "lru_list.hpp"
 
 namespace {
 
@@ -60,8 +55,8 @@ void check_iumap() {
   os << "---\n";
 
   std::cout << "Members are:\n";
-  for (auto it = h.begin(), end = h.end(); it != end; ++it) {
-    std::cout << "  " << it->first << ' ' << it->second << '\n';
+  for (auto const &kvp : h) {
+    std::cout << "  " << kvp.first << ' ' << kvp.second << '\n';
   }
 
   h.clear();
@@ -113,11 +108,9 @@ ostream &operator<<(ostream &os, pair<int, string> const &kvp) {
 #endif
 
 int main() {
-#if 1
   check_iumap();
   check_lru_list();
   std::cout << "---\n";
-#endif
 
 #if 0
   using kvp = std::pair<int, std::string>;

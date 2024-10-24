@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project (hasht)
+project (cache)
 
 include (CheckCXXCompilerFlag)
 include (CheckLinkerFlag)
@@ -161,7 +161,7 @@ endfunction (setup_target)
 
 
 
-add_executable(hasht main.cpp cache.hpp iumap.hpp lru_list.hpp)
-target_compile_features(hasht PUBLIC cxx_std_20)
-setup_target(hasht)
+add_executable(cache main.cpp cache.hpp iumap.hpp lru_list.hpp)
+target_compile_features(cache PUBLIC cxx_std_20)
+setup_target(cache)
 

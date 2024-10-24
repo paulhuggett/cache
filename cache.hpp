@@ -8,6 +8,11 @@
 #ifndef CACHE_HPP
 #define CACHE_HPP
 
+#include <cassert>
+#include <cstddef>
+#include <ostream>
+#include <utility>
+
 #include "iumap.hpp"
 #include "lru_list.hpp"
 
