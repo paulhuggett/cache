@@ -16,8 +16,10 @@
 
 #include "cache.hpp"
 
+namespace {
+
 void check_iumap() {
-  iumap<int, std::string, 16> h;
+  iumap<int, std::string, 8> h;
 
   h.insert(std::make_pair(2, "two"));
   h.insert(std::make_pair(18, std::to_string(18)));
@@ -61,30 +63,46 @@ void check_iumap() {
   for (auto it = h.begin(), end = h.end(); it != end; ++it) {
     std::cout << "  " << it->first << ' ' << it->second << '\n';
   }
+
+  h.clear();
+
+  while (h.size() < h.max_size()) {
+    auto const ctr = static_cast<int>(h.size());
+    h.insert(std::make_pair(ctr, std::to_string(ctr)));
+  }
+
+  while (!h.empty()) {
+    auto const ctr = static_cast<int>(h.size() - 1);
+    h.erase(h.find(ctr));
+  }
+  h.insert(make_kvp(9));
 }
 
 void check_lru_list() {
   lru_list<int, 5> lru;
-  auto *t1 = lru.add(1);
+  auto evictor = [](int *) {};
+  auto *t1 = lru.add(1, evictor);
   lru.touch(t1);  // do nothing!
-  auto *t2 = lru.add(2);
+  auto *t2 = lru.add(2, evictor);
   lru.touch(t2);  // do nothing!
-  auto *t3 = lru.add(3);
-  auto *t4 = lru.add(4);
+  auto *t3 = lru.add(3, evictor);
+  lru.add(4, evictor);
   lru.touch(t1);
   lru.dump(std::cout);
 
-  auto *t5 = lru.add(5);  // evicts 2
-  auto *t6 = lru.add(6);  // evicts 3
+  lru.add(5, evictor);  // evicts 2
+  lru.add(6, evictor);  // evicts 3
   lru.dump(std::cout);
 
   lru.touch(t3);  // 3 is now at the front of the list
   lru.dump(std::cout);
-  auto *t7 = lru.add(7);  // evicts 4
+  lru.add(7, evictor);  // evicts 4
   lru.dump(std::cout);
 }
 
-#if 1
+}  // end anonymous namespace
+
+#if 0
 namespace std {
 
 ostream &operator<<(ostream &os, pair<int, string> const &kvp) {
@@ -94,66 +112,6 @@ ostream &operator<<(ostream &os, pair<int, string> const &kvp) {
 }  // end namespace std
 #endif
 
-template <typename Key, typename Value, std::size_t Size> class cache {
-public:
-  using key_type = Key;
-  using value_type = Value;
-
-  value_type *find(key_type const &k);
-  bool set(key_type const &k, value_type const &v);
-
-  void dump(std::ostream &os) {
-    lru.dump(os);
-    h.dump(os);
-  }
-
-private:
-  using lru_container = lru_list<std::pair<Key, Value>, Size>;
-  using hash_map = iumap<Key const, typename lru_container::node *, Size>;
-
-  lru_container lru;
-  hash_map h;
-};
-
-template <typename Key, typename Value, std::size_t Size>
-auto cache<Key, Value, Size>::find(key_type const &k) -> value_type * {
-  auto const pos = h.find(k);
-  if (pos == h.end()) {
-    return nullptr;
-  }
-  auto *const node = pos->second;
-  lru.touch(node);
-  assert(lru.size() == h.size());
-  return &(node->value()->second);
-}
-
-template <typename Key, typename Value, std::size_t Size>
-bool cache<Key, Value, Size>::set(key_type const &k, value_type const &v) {
-  auto const pos = h.find(k);
-  if (pos == h.end()) {
-    auto const fn = [this](std::pair<key_type, value_type> *const kvp) {
-      // delete the key being evicted
-      if (auto const pos = this->h.find(kvp->first); pos != this->h.end()) {
-        this->h.erase(pos);
-      }
-    };
-    h.insert(std::make_pair(k, lru.add(std::make_pair(k, v), fn)));
-    assert(lru.size() == h.size());
-    return false;
-  }
-
-  // The key _was_ found in the cache.
-  lru.touch(pos->second);
-  auto &cached_value = pos->second->value()->second;
-  if (v == cached_value) {
-    assert(lru.size() == h.size());
-    return true;
-  }
-  cached_value = v;
-  assert(lru.size() == h.size());
-  return false;
-}
-
 int main() {
 #if 1
   check_iumap();
@@ -161,6 +119,7 @@ int main() {
   std::cout << "---\n";
 #endif
 
+#if 0
   using kvp = std::pair<int, std::string>;
   auto const test = std::array{
       kvp{1, "one"},     kvp{2, "two"},  kvp{1, "one one"}, kvp{3, "three"},   kvp{4, "four"},
@@ -177,4 +136,13 @@ int main() {
   }
 
   c.dump(std::cout);
+#else
+  cache<int, std::pair<int, int>, 32> c;
+
+  for (int ctr = 0; true; ++ctr) {
+    auto c2 = ctr / 16;
+    c.set(c2, std::make_pair(c2, c2));
+  }
+
+#endif
 }
