@@ -53,20 +53,22 @@ template <typename Key, typename Value, std::size_t Size>
 bool cache<Key, Value, Size>::set(key_type const &k, value_type const &v) {
   auto const pos = h.find(k);
   if (pos == h.end()) {
-    auto const fn = [this](std::pair<key_type, value_type> *const kvp) {
-      // delete the key being evicted
-      if (auto const evict_pos = this->h.find(kvp->first); evict_pos != this->h.end()) {
+    auto const fn = [this](std::pair<key_type, value_type> & kvp) {
+      // delete the key being evicted from the LUR-list from the hash table so that
+      // they always match.
+      if (auto const evict_pos = this->h.find(kvp.first); evict_pos != this->h.end()) {
         this->h.erase(evict_pos);
       }
     };
-    h.insert(std::make_pair(k, lru.add(std::make_pair(k, v), fn)));
+    h.insert(std::make_pair(k, &lru.add(std::make_pair(k, v), fn)));
     assert(lru.size() == h.size());
     return false;
   }
 
   // The key _was_ found in the cache.
-  lru.touch(pos->second);
-  auto &cached_value = pos->second->value()->second;
+  auto & value = *pos->second;
+  lru.touch(value);
+  auto &cached_value = value->second;
   if (v == cached_value) {
     // The key was in the cache and the values are equal.
     assert(lru.size() == h.size());

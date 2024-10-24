@@ -73,28 +73,6 @@ void check_iumap() {
   h.insert(make_kvp(9));
 }
 
-void check_lru_list() {
-  lru_list<int, 5> lru;
-  auto evictor = [](int *) {};
-  auto *t1 = lru.add(1, evictor);
-  lru.touch(t1);  // do nothing!
-  auto *t2 = lru.add(2, evictor);
-  lru.touch(t2);  // do nothing!
-  auto *t3 = lru.add(3, evictor);
-  lru.add(4, evictor);
-  lru.touch(t1);
-  lru.dump(std::cout);
-
-  lru.add(5, evictor);  // evicts 2
-  lru.add(6, evictor);  // evicts 3
-  lru.dump(std::cout);
-
-  lru.touch(t3);  // 3 is now at the front of the list
-  lru.dump(std::cout);
-  lru.add(7, evictor);  // evicts 4
-  lru.dump(std::cout);
-}
-
 }  // end anonymous namespace
 
 #if 0
@@ -109,7 +87,6 @@ ostream &operator<<(ostream &os, pair<int, string> const &kvp) {
 
 int main() {
   check_iumap();
-  check_lru_list();
   std::cout << "---\n";
 
 #if 0

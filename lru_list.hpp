@@ -25,10 +25,17 @@ public:
     friend class lru_list;
 
   public:
-    [[nodiscard]] constexpr ValueType *value() noexcept { return std::bit_cast<ValueType *>(&payload[0]); }
-    [[nodiscard]] constexpr ValueType const *value() const noexcept {
-      return std::bit_cast<ValueType const *>(&payload[0]);
-    }
+    using pointer = ValueType*;
+    using element_type = ValueType;
+
+    [[nodiscard]] constexpr ValueType & operator*() noexcept { return *std::bit_cast<ValueType *>(&payload[0]); }
+    [[nodiscard]] constexpr ValueType const & operator*() const noexcept { return *std::bit_cast<ValueType *>(&payload[0]); }
+
+    [[nodiscard]] constexpr ValueType * operator->() noexcept { return std::bit_cast<ValueType *>(&payload[0]); }
+    [[nodiscard]] constexpr ValueType const * operator->() const noexcept { return std::bit_cast<ValueType *>(&payload[0]); }
+
+    [[nodiscard]] constexpr ValueType * get() noexcept { return std::bit_cast<ValueType *>(&payload[0]); }
+    [[nodiscard]] constexpr ValueType const * get() const noexcept { return std::bit_cast<ValueType *>(&payload[0]); }
 
   private:
     alignas(ValueType) std::byte payload[sizeof(ValueType)]{};
@@ -37,10 +44,11 @@ public:
   };
 
   void clear();
+  [[nodiscard]] constexpr bool empty() const noexcept { return size_ == 0; }
   [[nodiscard]] constexpr std::size_t size() const noexcept { return size_; }
-  void touch(node *n);
+  void touch(node &n);
 
-  template <typename Evictor = void(ValueType *)> node *add(ValueType const &payload, Evictor evictor);
+  template <std::invocable<ValueType &> Evictor = void(ValueType &)> node &add(ValueType const &payload, Evictor evictor);
 
 #ifndef NDEBUG
   void dump(std::ostream &os) const;
@@ -69,38 +77,38 @@ template <typename ValueType, std::size_t Size> void lru_list<ValueType, Size>::
 
 // touch
 // ~~~~~
-template <typename ValueType, std::size_t Size> void lru_list<ValueType, Size>::touch(node *const n) {
+template <typename ValueType, std::size_t Size> void lru_list<ValueType, Size>::touch(node & n) {
   assert(first_ != nullptr && last_ != nullptr);
-  if (first_ == n) {
+  if (first_ == &n) {
     return;
   }
   // Unhook 'n' from the list in its current position.
-  if (last_ == n) {
-    last_ = n->prev;
+  if (last_ == &n) {
+    last_ = n.prev;
   }
-  if (n->next != nullptr) {
-    n->next->prev = n->prev;
+  if (n.next != nullptr) {
+    n.next->prev = n.prev;
   }
-  if (n->prev != nullptr) {
-    n->prev->next = n->next;
+  if (n.prev != nullptr) {
+    n.prev->next = n.next;
   }
   // Push on the front of the list.
-  n->prev = nullptr;
-  n->next = first_;
-  first_->prev = n;
-  first_ = n;
+  n.prev = nullptr;
+  n.next = first_;
+  first_->prev = &n;
+  first_ = &n;
   this->check_invariants();
 }
 
 // add
 // ~~~
 template <typename ValueType, std::size_t Size>
-template <typename Evictor>
-auto lru_list<ValueType, Size>::add(ValueType const &payload, Evictor evictor) -> node * {
+template <std::invocable<ValueType &> Evictor>
+auto lru_list<ValueType, Size>::add(ValueType const &payload, Evictor evictor) -> node & {
   node *result = nullptr;
   if (size_ < v_.size()) {
     result = &v_[size_];
-    new (result->value()) ValueType{payload};
+    new (std::to_address(result)) ValueType{payload};
 
     ++size_;
     if (last_ == nullptr) {
@@ -109,9 +117,12 @@ auto lru_list<ValueType, Size>::add(ValueType const &payload, Evictor evictor) -
   } else {
     assert(first_ != nullptr && last_ != nullptr);
     result = last_;
-    evictor(result->value());
-    *last_->value() = std::move(payload);
+    // Throw out the least recently used element.
+    evictor(**result);
+    // Re-use the array entry for the new value.
+    **last_ = std::move(payload);
 
+    // Set about moving this element to the front of the list as the most recently used.
     last_ = result->prev;
     last_->next = nullptr;
   }
@@ -125,7 +136,7 @@ auto lru_list<ValueType, Size>::add(ValueType const &payload, Evictor evictor) -
   }
   first_ = result;
   this->check_invariants();
-  return result;
+  return *result;
 }
 
 // check invariants
