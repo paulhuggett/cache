@@ -40,7 +40,7 @@ public:
   [[nodiscard]] constexpr std::size_t size() const noexcept { return size_; }
   void touch(node *n);
 
-  template <typename Evictor = void(ValueType *)> node *add(ValueType &&payload, Evictor evictor);
+  template <typename Evictor = void(ValueType *)> node *add(ValueType const &payload, Evictor evictor);
 
 #ifndef NDEBUG
   void dump(std::ostream &os) const;
@@ -96,11 +96,11 @@ template <typename ValueType, std::size_t Size> void lru_list<ValueType, Size>::
 // ~~~
 template <typename ValueType, std::size_t Size>
 template <typename Evictor>
-auto lru_list<ValueType, Size>::add(ValueType &&payload, Evictor evictor) -> node * {
+auto lru_list<ValueType, Size>::add(ValueType const &payload, Evictor evictor) -> node * {
   node *result = nullptr;
   if (size_ < v_.size()) {
     result = &v_[size_];
-    new (result->value()) ValueType{std::forward<ValueType>(payload)};
+    new (result->value()) ValueType{payload};
 
     ++size_;
     if (last_ == nullptr) {
