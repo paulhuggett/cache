@@ -51,7 +51,7 @@ auto cache<Key, Value, Size>::find(key_type const &k) -> value_type * {
 
 template <typename Key, typename Value, std::size_t Size>
 bool cache<Key, Value, Size>::set(key_type const &k, value_type const &v) {
-  auto const pos = h.find(k);
+  auto pos = h.find(k);
   if (pos == h.end()) {
     auto const fn = [this](std::pair<key_type, value_type> & kvp) {
       // delete the key being evicted from the LUR-list from the hash table so that
@@ -66,10 +66,10 @@ bool cache<Key, Value, Size>::set(key_type const &k, value_type const &v) {
   }
 
   // The key _was_ found in the cache.
-  auto & value = *pos->second;
-  lru.touch(value);
-  auto &cached_value = value->second;
-  if (v == cached_value) {
+  typename lru_container::node &lru_entry = *pos->second;
+  lru.touch(lru_entry);
+  auto &cached_value = static_cast<std::pair<Key, Value> &>(lru_entry).second;
+  if (cached_value == v) {
     // The key was in the cache and the values are equal.
     assert(lru.size() == h.size());
     return true;

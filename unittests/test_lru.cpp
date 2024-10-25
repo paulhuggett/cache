@@ -23,27 +23,25 @@ public:
 };
 
 using testing::InSequence;
-using testing::Pointee;
 using testing::StrictMock;
-using testing::Eq;
-
 
 TEST (LruList, AddToFull) {
   StrictMock<mock_evictor> evictor;
   lru_list<int, 4> lru;
-  EXPECT_THAT (lru.add (1, std::ref(evictor)), Pointee(Eq(1)));
+  using int_ref = int &;
+  EXPECT_THAT(static_cast<int_ref>(lru.add(1, std::ref(evictor))), 1);
   EXPECT_FALSE (lru.empty ());
   EXPECT_EQ (lru.size(), 1);
 
-  EXPECT_THAT (lru.add (2, std::ref(evictor)), Pointee(Eq(2)));
+  EXPECT_THAT(static_cast<int_ref>(lru.add(2, std::ref(evictor))), 2);
   EXPECT_FALSE (lru.empty ());
   EXPECT_EQ (lru.size(), 2);
 
-  EXPECT_THAT (lru.add (3, std::ref(evictor)), Pointee(Eq(3)));
+  EXPECT_THAT(static_cast<int_ref>(lru.add(3, std::ref(evictor))), 3);
   EXPECT_FALSE (lru.empty ());
   EXPECT_EQ (lru.size(), 3);
 
-  EXPECT_THAT (lru.add (4, std::ref(evictor)), Pointee(Eq(4)));
+  EXPECT_THAT(static_cast<int_ref>(lru.add(4, std::ref(evictor))), 4);
   EXPECT_FALSE (lru.empty ());
   EXPECT_EQ (lru.size(), 4);
 }

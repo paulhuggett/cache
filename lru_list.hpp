@@ -25,17 +25,8 @@ public:
     friend class lru_list;
 
   public:
-    using pointer = ValueType*;
-    using element_type = ValueType;
-
-    [[nodiscard]] constexpr ValueType & operator*() noexcept { return *std::bit_cast<ValueType *>(&payload[0]); }
-    [[nodiscard]] constexpr ValueType const & operator*() const noexcept { return *std::bit_cast<ValueType *>(&payload[0]); }
-
-    [[nodiscard]] constexpr ValueType * operator->() noexcept { return std::bit_cast<ValueType *>(&payload[0]); }
-    [[nodiscard]] constexpr ValueType const * operator->() const noexcept { return std::bit_cast<ValueType *>(&payload[0]); }
-
-    [[nodiscard]] constexpr ValueType * get() noexcept { return std::bit_cast<ValueType *>(&payload[0]); }
-    [[nodiscard]] constexpr ValueType const * get() const noexcept { return std::bit_cast<ValueType *>(&payload[0]); }
+    explicit operator ValueType &() noexcept { return *std::bit_cast<ValueType *>(&payload[0]); }
+    explicit operator ValueType const &() const noexcept { return *std::bit_cast<ValueType const *>(&payload[0]); }
 
   private:
     alignas(ValueType) std::byte payload[sizeof(ValueType)]{};
@@ -118,9 +109,10 @@ auto lru_list<ValueType, Size>::add(ValueType const &payload, Evictor evictor) -
     assert(first_ != nullptr && last_ != nullptr);
     result = last_;
     // Throw out the least recently used element.
-    evictor(**result);
+    ValueType &lru_value = static_cast<ValueType &>(*result);
+    evictor(lru_value);
     // Re-use the array entry for the new value.
-    **last_ = std::move(payload);
+    lru_value = std::move(payload);
 
     // Set about moving this element to the front of the list as the most recently used.
     last_ = result->prev;
