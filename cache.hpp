@@ -31,10 +31,9 @@ public:
 
 private:
   using lru_container = lru_list<std::pair<Key, Value>, Size>;
-  using hash_map = iumap<Key const, typename lru_container::node *, Size>;
 
   lru_container lru;
-  hash_map h;
+  iumap<Key const, typename decltype(lru)::node *, Size> h;
 };
 
 template <typename Key, typename Value, std::size_t Size>
