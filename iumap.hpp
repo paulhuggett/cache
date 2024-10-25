@@ -120,7 +120,7 @@ public:
 
     iterator_type &operator+=(difference_type n) {
       if (n < 0) {
-        (*this) = (*this) - (-n);
+        *this = *this - (-n);
       } else {
         for (; n > 0; --n) {
           ++(*this);
@@ -131,7 +131,7 @@ public:
 
     iterator_type &operator-=(difference_type n) {
       if (n < 0) {
-        (*this) = (*this) + (-n);
+        *this = *this + (-n);
       } else {
         for (; n > 0; --n) {
           --(*this);
