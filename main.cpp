@@ -48,15 +48,13 @@ void check_iumap() {
 
   h.try_emplace(101, "one zero one");
   h.try_emplace(23, "twenty three");
-  // h[101] = "one zero one";
-  // h[23] = "twenty three";
 
   h.dump(os);
   os << "---\n";
 
   std::cout << "Members are:\n";
-  for (auto const &kvp : h) {
-    std::cout << "  " << kvp.first << ' ' << kvp.second << '\n';
+  for (auto const &[key, value] : h) {
+    std::cout << "  " << key << ' ' << value << '\n';
   }
 
   h.clear();
@@ -74,16 +72,6 @@ void check_iumap() {
 }
 
 }  // end anonymous namespace
-
-#if 0
-namespace std {
-
-ostream &operator<<(ostream &os, pair<int, string> const &kvp) {
-  return os << '{' << kvp.first << ':' << kvp.second << '}';
-}
-
-}  // end namespace std
-#endif
 
 int main() {
   check_iumap();
@@ -109,6 +97,7 @@ int main() {
 #else
   cache<int, std::pair<int, int>, 32> c;
 
+  // An infinite loop for use with a profiler.
   for (int ctr = 0; true; ++ctr) {
     auto c2 = ctr / 16;
     c.set(c2, std::make_pair(c2, c2));
