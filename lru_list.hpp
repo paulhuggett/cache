@@ -109,7 +109,7 @@ auto lru_list<ValueType, Size>::add(ValueType const &payload, Evictor evictor) -
     assert(first_ != nullptr && last_ != nullptr);
     result = last_;
     // Throw out the least recently used element.
-    ValueType &lru_value = static_cast<ValueType &>(*result);
+    auto &lru_value = static_cast<ValueType &>(*result);
     evictor(lru_value);
     // Re-use the array entry for the new value.
     lru_value = std::move(payload);
