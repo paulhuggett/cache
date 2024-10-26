@@ -3,6 +3,8 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
+namespace {
+
 TEST (LruList, Empty) {
   lru_list<int, 4> lru;
   EXPECT_TRUE (lru.empty ());
@@ -104,3 +106,4 @@ TEST (LruList, Sequence) {
   lru.add(7, std::ref(evictor));  // evicts 4
 }
 
+}  // end anonymous namespace

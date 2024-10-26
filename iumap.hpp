@@ -20,7 +20,9 @@
 #include <utility>
 
 // Standard library: for quick and dirty trace output
-#include <iostream>
+#ifdef IUMAP_TRACE
+#include <ostream>
+#endif  // IUMAP_TRACE
 
 /// \tparam UInt An unsigned integer type.
 /// \param n An integer value to check whether it is a power of two.
@@ -94,8 +96,8 @@ public:
     constexpr auto operator==(sentinel<T>) const noexcept { return slot_ == this->end_limit(); }
     constexpr auto operator!=(sentinel<T> other) const noexcept { return !operator==(other); }
 
-    reference operator*() const noexcept { return *slot_->cast(); }
-    pointer operator->() const noexcept { return slot_->cast(); }
+    constexpr reference operator*() const noexcept { return static_cast<reference>(*slot_); }
+    constexpr pointer operator->() const noexcept { return &static_cast<reference>(*slot_); }
 
     iterator_type &operator--() {
       --slot_;
@@ -210,33 +212,20 @@ public:
   template <typename M> std::pair<iterator, bool> insert_or_assign(Key const &key, M &&value);
   /// inserts in-place if the key does not exist, does nothing if the key exists
   template <typename... Args> std::pair<iterator, bool> try_emplace(Key const &key, Args &&...args);
+  /// erases elements
+  iterator erase(iterator pos);
+
   // Lookup
   iterator find(Key const &k);
   const_iterator find(Key const &k) const;
-
-  iterator erase(iterator pos) {
-    member *const slot = pos.raw();
-    auto const result = pos + 1;
-    if (slot->state == state::occupied) {
-      assert(size_ > 0);
-      slot->cast()->~value_type();
-      slot->state = state::tombstone;
-      --size_;
-      ++tombstones_;
-      if (this->empty()) {
-        this->clear();
-      }
-    }
-    return result;
-  }
 
   // Observers
   hasher hash_function() const { return Hash{}; }
   key_equal key_eq() const { return KeyEqual{}; }
 
+#ifdef IUMAP_TRACE
   void dump(std::ostream &os) const {
     std::cout << "size=" << size_ << '\n';
-
     for (auto index = std::size_t{0}; auto const &slot : v_) {
       os << '[' << index << "] ";
       ++index;
@@ -251,17 +240,18 @@ public:
       os << '\n';
     }
   }
+#endif  // IUMAP_TRACE
 
 private:
   enum class state { occupied, tombstone, unused };
   struct member {
-    [[nodiscard]] constexpr value_type *cast() noexcept {
+    [[nodiscard]] constexpr operator value_type &() noexcept {
       assert(state == state::occupied);
-      return std::bit_cast<value_type *>(&storage[0]);
+      return *std::bit_cast<value_type *>(&storage[0]);
     }
-    [[nodiscard]] constexpr value_type const *cast() const noexcept {
+    [[nodiscard]] constexpr operator value_type const &() const noexcept {
       assert(state == state::occupied);
-      return std::bit_cast<value_type const *>(&storage[0]);
+      return *std::bit_cast<value_type const *>(&storage[0]);
     }
 
     enum state state = state::unused;
@@ -424,7 +414,7 @@ template <typename Key, typename Mapped, std::size_t Size, typename Hash, typena
 void iumap<Key, Mapped, Size, Hash, KeyEqual>::clear() noexcept {
   for (auto &entry : v_) {
     if (entry.state == state::occupied) {
-      entry.cast()->~value_type();
+      static_cast<reference>(entry).~value_type();
     }
     entry.state = state::unused;
   }
@@ -442,7 +432,6 @@ auto iumap<Key, Mapped, Size, Hash, KeyEqual>::try_emplace(Key const &key, Args 
     // The map is full and the key was not found. Insertion failed.
     return std::make_pair(this->end(), false);
   }
-  auto const it = iterator{slot, &v_};
   auto const do_insert = slot->state == state::unused || slot->state == state::tombstone;
   if (do_insert) {
     // Not found. Add a new key/value pair.
@@ -453,7 +442,7 @@ auto iumap<Key, Mapped, Size, Hash, KeyEqual>::try_emplace(Key const &key, Args 
     }
     slot->state = state::occupied;
   }
-  return std::make_pair(it, do_insert);
+  return std::make_pair(iterator{slot, &v_}, do_insert);
 }
 
 template <typename Key, typename Mapped, std::size_t Size, typename Hash, typename KeyEqual>
@@ -482,8 +471,7 @@ auto iumap<Key, Mapped, Size, Hash, KeyEqual>::insert_or_assign(Key const &key, 
     slot->state = state::occupied;
     return std::make_pair(iterator{slot, &v_}, true);
   }
-  auto *const kvp = slot->cast();
-  kvp->second = value;  // Overwrite the existing value.
+  static_cast<reference>(*slot).second = value;  // Overwrite the existing value.
   return std::make_pair(iterator{slot, &v_}, false);
 }
 
@@ -507,6 +495,24 @@ auto iumap<Key, Mapped, Size, Hash, KeyEqual>::find(Key const &k) -> iterator {
   return {slot, &v_};  // Found
 }
 
+template <typename Key, typename Mapped, std::size_t Size, typename Hash, typename KeyEqual>
+  requires(is_power_of_two(Size))
+auto iumap<Key, Mapped, Size, Hash, KeyEqual>::erase(iterator pos) -> iterator {
+  member *const slot = pos.raw();
+  auto const result = pos + 1;
+  if (slot->state == state::occupied) {
+    assert(size_ > 0);
+    static_cast<reference>(*slot).~value_type();
+    slot->state = state::tombstone;
+    --size_;
+    ++tombstones_;
+    if (this->empty()) {
+      this->clear();
+    }
+  }
+  return result;
+}
+
 /// Searches the container for a specified key. Stops when the key is found or an unused slot is probed.
 /// Tombstones are ignored.
 template <typename Key, typename Mapped, std::size_t Size, typename Hash, typename KeyEqual>
@@ -526,7 +532,7 @@ auto *iumap<Key, Mapped, Size, Hash, KeyEqual>::lookup_slot(Container &container
       // Keep searching.
       break;
     case state::occupied:
-      if (equal(slot->cast()->first, key)) {
+      if (equal(static_cast<reference>(*slot).first, key)) {
         return slot;
       }
       break;
@@ -560,7 +566,7 @@ auto *iumap<Key, Mapped, Size, Hash, KeyEqual>::find_insert_slot(Container &cont
       }
       break;
     case state::occupied:
-      if (equal(slot->cast()->first, key)) {
+      if (equal(static_cast<reference>(*slot).first, key)) {
         return slot;
       }
       break;
