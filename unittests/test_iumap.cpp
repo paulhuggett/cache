@@ -45,9 +45,9 @@ TEST(IUMap, InsertIntoAFullMap) {
   iumap<int, std::string, 2> h;
   h.insert(std::make_pair(1, "one"s));
   h.insert(std::make_pair(2, "two"s));
-  auto [pos3, did_insert3] = h.insert(std::make_pair(3, "three"s));
-  ASSERT_FALSE(did_insert3);
-  EXPECT_EQ(pos3, h.end());
+  auto [pos, did_insert] = h.insert(std::make_pair(3, "three"s));
+  ASSERT_FALSE(did_insert);
+  EXPECT_EQ(pos, h.end());
 }
 
 TEST(IUMap, InsertOrAssign) {
@@ -65,6 +65,15 @@ TEST(IUMap, InsertOrAssign) {
   EXPECT_EQ(*pos2, (value_type{10, "ten ten"s}));
 }
 
+TEST(IUMap, InsertOrAssignIntoAFullMap) {
+  iumap<int, std::string, 2> h;
+  h.insert(std::make_pair(1, "one"s));
+  h.insert(std::make_pair(2, "two"s));
+  auto [pos, did_insert] = h.insert_or_assign(3, "three"s);
+  ASSERT_FALSE(did_insert);
+  EXPECT_EQ(pos, h.end());
+}
+
 TEST(IUMap, Erase) {
   iumap<int, std::string, 8> h;
   auto [pos1, did_insert1] = h.insert(std::make_pair(10, "ten"s));
@@ -73,13 +82,20 @@ TEST(IUMap, Erase) {
   EXPECT_TRUE(h.empty());
 }
 
-TEST(IUMap, Find) {
+TEST(IUMap, FindFound) {
   iumap<int, std::string, 8> h;
   h.insert(std::make_pair(10, "ten"s));
   auto pos = h.find(10);
   ASSERT_NE(pos, h.end());
   EXPECT_EQ(pos->first, 10);
   EXPECT_EQ(pos->second, "ten"s);
+}
+
+TEST(IUMap, FindNotFound) {
+  iumap<int, std::string, 8> h;
+  h.insert(std::make_pair(10, "ten"s));
+  auto pos = h.find(11);
+  EXPECT_EQ(pos, h.end());
 }
 
 }  // end anonymous namespace
