@@ -1,7 +1,12 @@
+// DUT
 #include "lru_list.hpp"
 
+// Google Test/Mock/Fuzz
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#if defined(FUZZTEST) && FUZZTEST
+#include <fuzztest/fuzztest.h>
+#endif
 
 namespace {
 
@@ -104,6 +109,21 @@ TEST (LruList, Sequence) {
 
   lru.touch(t3);  // 3 is now at the front of the list
   lru.add(7, std::ref(evictor));  // evicts 4
+}
+
+void Thrash(std::vector<int> const &a) {
+  lru_list<int, 4> lru;
+  auto evictor = [](int &) {};
+  for (auto value : a) {
+    lru.add(value, evictor);
+  }
+}
+
+#if defined(FUZZTEST) && FUZZTEST
+FUZZ_TEST(LruList, Thrash);
+#endif
+TEST(LruList, NoThrash) {
+  Thrash({});
 }
 
 }  // end anonymous namespace
