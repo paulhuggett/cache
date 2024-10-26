@@ -202,10 +202,10 @@ TEST(IUMap, MoveCtor) {
   iumap<int, std::string, 4> b(std::move(a));
   EXPECT_EQ(b.size(), 2U);
   ASSERT_NE(b.find(1), b.end());
-  EXPECT_EQ(*a.find(1), one);
-  ASSERT_EQ(a.find(2), a.end());
-  ASSERT_NE(a.find(3), a.end());
-  EXPECT_EQ(*a.find(3), three);
+  EXPECT_EQ(*b.find(1), one);
+  ASSERT_EQ(b.find(2), a.end());
+  ASSERT_NE(b.find(3), a.end());
+  EXPECT_EQ(*b.find(3), three);
 }
 
 }  // end anonymous namespace
