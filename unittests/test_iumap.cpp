@@ -3,10 +3,14 @@
 
 // Standard library
 #include <string>
+#include <unordered_map>
 
 // Google Test/Mock
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#if defined(FUZZTEST) && FUZZTEST
+#include <fuzztest/fuzztest.h>
+#endif
 
 using namespace std::string_literals;
 
@@ -206,6 +210,35 @@ TEST(IUMap, MoveCtor) {
   ASSERT_EQ(b.find(2), b.end());
   ASSERT_NE(b.find(3), b.end());
   EXPECT_EQ(*b.find(3), three);
+}
+
+void Thrash(std::vector<int> const &in, std::vector<int> const &del) {
+  iumap<int, int, 16> a;
+  std::unordered_map<int, int> b;
+
+  for (int a1 : in) {
+    if (a.size() >= a.max_size()) {
+      break;
+    }
+    a.insert(std::make_pair(a1, a1));
+    b.insert(std::make_pair(a1, a1));
+  }
+  for (int d1 : del) {
+    if (auto apos = a.find(d1); apos != a.end()) {
+      a.erase(apos);
+    }
+    if (auto bpos = b.find(d1); bpos != b.end()) {
+      b.erase(bpos);
+    }
+  }
+  EXPECT_THAT(a, testing::UnorderedElementsAreArray(b));
+}
+
+#if defined(FUZZTEST) && FUZZTEST
+FUZZ_TEST(IUMap, Thrash);
+#endif
+TEST(IUMap, ThreashNone) {
+  Thrash(std::vector<int>{}, std::vector<int>{});
 }
 
 }  // end anonymous namespace

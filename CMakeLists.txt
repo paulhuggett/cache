@@ -7,7 +7,7 @@ include (CTest)
 
 
 option (COVERAGE "Enable code coverage" No)
-option (FUZZ_TEST "Enable fuzz testing" No)
+option (FUZZTEST "Enable fuzz testing" No)
 option (SANITIZE "Enable sanitizers" No)
 option (WERROR "Warnings as errors" No)
 
@@ -118,7 +118,7 @@ function (setup_target target)
     $<$<CXX_COMPILER_ID:MSVC>:${msvc_options}>
   )
 
-  target_compile_definitions (${target} PRIVATE MIDI2_FUZZTEST=$<BOOL:${MIDI2_FUZZTEST}>)
+  target_compile_definitions (${target} PRIVATE FUZZTEST=$<BOOL:${FUZZTEST}>)
   target_compile_definitions (${target} PRIVATE
     $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:${clang_definitions}>
     $<$<CXX_COMPILER_ID:GNU>:${gcc_definitions}>
