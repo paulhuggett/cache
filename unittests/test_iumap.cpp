@@ -15,6 +15,8 @@ namespace {
 TEST(IUMap, Empty) {
   iumap<int, std::string, 8> h;
   EXPECT_EQ(h.size(), 0U);
+  EXPECT_EQ(h.max_size(), 8U);
+  EXPECT_EQ(h.capacity(), 8U);
   EXPECT_TRUE(h.empty());
 }
 
@@ -166,6 +168,44 @@ TEST(IUMap, MoveAssign) {
   EXPECT_EQ(*a.find(6), six);
   ASSERT_NE(a.find(7), a.end());
   EXPECT_EQ(*a.find(7), seven);
+}
+
+TEST(IUMap, CopyCtor) {
+  auto const one = std::pair<int const, std::string>{1, "one"s};
+  auto const three = std::pair<int const, std::string>{3, "three"s};
+
+  iumap<int, std::string, 4> a;
+  a.insert(one);
+  auto pa2 = a.insert(std::make_pair(2, "two")).first;
+  a.insert(three);
+  a.erase(pa2);  // an erase so that the container holds a tombstone record
+
+  iumap<int, std::string, 4> b(a);
+  EXPECT_EQ(b.size(), 2U);
+  ASSERT_NE(b.find(1), b.end());
+  EXPECT_EQ(*a.find(1), one);
+  ASSERT_EQ(a.find(2), a.end());
+  ASSERT_NE(a.find(3), a.end());
+  EXPECT_EQ(*a.find(3), three);
+}
+
+TEST(IUMap, MoveCtor) {
+  auto const one = std::pair<int const, std::string>{1, "one"s};
+  auto const three = std::pair<int const, std::string>{3, "three"s};
+
+  iumap<int, std::string, 4> a;
+  a.insert(one);
+  auto pa2 = a.insert(std::make_pair(2, "two")).first;
+  a.insert(three);
+  a.erase(pa2);  // an erase so that the container holds a tombstone record
+
+  iumap<int, std::string, 4> b(std::move(a));
+  EXPECT_EQ(b.size(), 2U);
+  ASSERT_NE(b.find(1), b.end());
+  EXPECT_EQ(*a.find(1), one);
+  ASSERT_EQ(a.find(2), a.end());
+  ASSERT_NE(a.find(3), a.end());
+  EXPECT_EQ(*a.find(3), three);
 }
 
 }  // end anonymous namespace
