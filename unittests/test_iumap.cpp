@@ -199,12 +199,12 @@ TEST(IUMap, MoveCtor) {
   a.insert(three);
   a.erase(pa2);  // an erase so that the container holds a tombstone record
 
-  iumap<int, std::string, 4> b(std::move(a));
+  iumap<int, std::string, 4> const b{std::move(a)};
   EXPECT_EQ(b.size(), 2U);
   ASSERT_NE(b.find(1), b.end());
   EXPECT_EQ(*b.find(1), one);
-  ASSERT_EQ(b.find(2), a.end());
-  ASSERT_NE(b.find(3), a.end());
+  ASSERT_EQ(b.find(2), b.end());
+  ASSERT_NE(b.find(3), b.end());
   EXPECT_EQ(*b.find(3), three);
 }
 

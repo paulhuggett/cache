@@ -520,7 +520,7 @@ auto *iumap<Key, Mapped, Size, Hash, KeyEqual>::lookup_slot(Container &container
       // Keep searching.
       break;
     case state::occupied:
-      if (equal(static_cast<reference>(*slot).first, key)) {
+      if (equal(static_cast<const_reference>(*slot).first, key)) {
         return slot;
       }
       break;
