@@ -41,6 +41,15 @@ TEST(IUMap, Insert) {
   EXPECT_EQ(*pos3, (value_type{3, "three"s}));
 }
 
+TEST(IUMap, InsertIntoAFullMap) {
+  iumap<int, std::string, 2> h;
+  h.insert(std::make_pair(1, "one"s));
+  h.insert(std::make_pair(2, "two"s));
+  auto [pos3, did_insert3] = h.insert(std::make_pair(3, "three"s));
+  ASSERT_FALSE(did_insert3);
+  EXPECT_EQ(pos3, h.end());
+}
+
 TEST(IUMap, InsertOrAssign) {
   iumap<int, std::string, 8> h;
   using value_type = decltype(h)::value_type;
@@ -62,6 +71,15 @@ TEST(IUMap, Erase) {
   h.erase(pos1);
   EXPECT_EQ(h.size(), 0U);
   EXPECT_TRUE(h.empty());
+}
+
+TEST(IUMap, Find) {
+  iumap<int, std::string, 8> h;
+  h.insert(std::make_pair(10, "ten"s));
+  auto pos = h.find(10);
+  ASSERT_NE(pos, h.end());
+  EXPECT_EQ(pos->first, 10);
+  EXPECT_EQ(pos->second, "ten"s);
 }
 
 }  // end anonymous namespace
