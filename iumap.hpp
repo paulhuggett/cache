@@ -414,7 +414,7 @@ template <typename Key, typename Mapped, std::size_t Size, typename Hash, typena
 void iumap<Key, Mapped, Size, Hash, KeyEqual>::clear() noexcept {
   for (auto &entry : v_) {
     if (entry.state == state::occupied) {
-      static_cast<reference>(entry).~value_type();
+      (void)static_cast<reference>(entry).~value_type();
     }
     entry.state = state::unused;
   }
@@ -502,7 +502,7 @@ auto iumap<Key, Mapped, Size, Hash, KeyEqual>::erase(iterator pos) -> iterator {
   auto const result = pos + 1;
   if (slot->state == state::occupied) {
     assert(size_ > 0);
-    static_cast<reference>(*slot).~value_type();
+    (void)static_cast<reference>(*slot).~value_type();
     slot->state = state::tombstone;
     --size_;
     ++tombstones_;
