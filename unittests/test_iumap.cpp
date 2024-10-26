@@ -98,4 +98,74 @@ TEST(IUMap, FindNotFound) {
   EXPECT_EQ(pos, h.end());
 }
 
+TEST(IUMap, CopyAssign) {
+  iumap<int, std::string, 4> a;
+  a.insert(std::make_pair(1, "one"));
+  auto pa2 = a.insert(std::make_pair(2, "two")).first;
+  a.insert(std::make_pair(3, "three"));
+  a.erase(pa2);  // an erase so that the container holds a tombstone record
+
+  auto const four = std::pair<int const, std::string>{4, "four"s};
+  auto const six = std::pair<int const, std::string>{6, "six"s};
+  auto const seven = std::pair<int const, std::string>{7, "seven"s};
+
+  iumap<int, std::string, 4> b;
+  b.insert(four);
+  auto pb5 = b.insert(std::make_pair(5, "five")).first;
+  b.insert(six);
+  b.erase(pb5);  // an erase so that the container holds a tombstone record
+  b.insert(seven);
+
+  a = b;
+  EXPECT_EQ(a.size(), 3);
+  EXPECT_EQ(a.find(1), a.end());
+  EXPECT_EQ(a.find(2), a.end());
+  EXPECT_EQ(a.find(3), a.end());
+
+  ASSERT_NE(a.find(4), a.end());
+  EXPECT_EQ(*a.find(4), four);
+
+  EXPECT_EQ(a.find(5), a.end());
+
+  ASSERT_NE(a.find(6), a.end());
+  EXPECT_EQ(*a.find(6), six);
+  ASSERT_NE(a.find(7), a.end());
+  EXPECT_EQ(*a.find(7), seven);
+}
+
+TEST(IUMap, MoveAssign) {
+  iumap<int, std::string, 4> a;
+  a.insert(std::make_pair(1, "one"));
+  auto pa2 = a.insert(std::make_pair(2, "two")).first;
+  a.insert(std::make_pair(3, "three"));
+  a.erase(pa2);  // an erase so that the container holds a tombstone record
+
+  auto const four = std::pair<int const, std::string>{4, "four"s};
+  auto const six = std::pair<int const, std::string>{6, "six"s};
+  auto const seven = std::pair<int const, std::string>{7, "seven"s};
+
+  iumap<int, std::string, 4> b;
+  b.insert(four);
+  auto pb5 = b.insert(std::make_pair(5, "five")).first;
+  b.insert(six);
+  b.erase(pb5);  // an erase so that the container holds a tombstone record
+  b.insert(seven);
+
+  a = std::move(b);
+  EXPECT_EQ(a.size(), 3);
+  EXPECT_EQ(a.find(1), a.end());
+  EXPECT_EQ(a.find(2), a.end());
+  EXPECT_EQ(a.find(3), a.end());
+
+  ASSERT_NE(a.find(4), a.end());
+  EXPECT_EQ(*a.find(4), four);
+
+  EXPECT_EQ(a.find(5), a.end());
+
+  ASSERT_NE(a.find(6), a.end());
+  EXPECT_EQ(*a.find(6), six);
+  ASSERT_NE(a.find(7), a.end());
+  EXPECT_EQ(*a.find(7), seven);
+}
+
 }  // end anonymous namespace

@@ -245,11 +245,11 @@ public:
 private:
   enum class state { occupied, tombstone, unused };
   struct member {
-    [[nodiscard]] constexpr operator value_type &() noexcept {
+    [[nodiscard]] constexpr explicit operator value_type &() noexcept {
       assert(state == state::occupied);
       return *std::bit_cast<value_type *>(&storage[0]);
     }
-    [[nodiscard]] constexpr operator value_type const &() const noexcept {
+    [[nodiscard]] constexpr explicit operator value_type const &() const noexcept {
       assert(state == state::occupied);
       return *std::bit_cast<value_type const *>(&storage[0]);
     }
@@ -260,6 +260,8 @@ private:
   std::size_t size_ = 0;
   std::size_t tombstones_ = 0;
   std::array<member, Size> v_{};
+
+  template <typename OtherMap> iumap &assign(OtherMap &&other);
 
   template <typename Container> static auto *lookup_slot(Container &container, Key const &key);
 
@@ -311,29 +313,34 @@ iumap<Key, Mapped, Size, Hash, KeyEqual>::iumap(iumap &&other) noexcept {
 
 template <typename Key, typename Mapped, std::size_t Size, typename Hash, typename KeyEqual>
   requires(is_power_of_two(Size))
-auto iumap<Key, Mapped, Size, Hash, KeyEqual>::operator=(iumap const &other) -> iumap & {
+template <typename OtherMap>
+auto iumap<Key, Mapped, Size, Hash, KeyEqual>::assign(OtherMap &&other) -> iumap & {
   if (this == &other) {
     return *this;
   }
-
-  member const *in = other.data();
+  auto *in = other.v_.data();
   for (member &entry : v_) {
     switch (in->state) {
     case state::occupied:
       if (entry.state == state::occupied) {
-        *entry.cast() = *in->cast();
-      } else {
-        new (entry.storage) value_type{*in->cast()};
-        if (entry.state == state::tombstone) {
-          --tombstones_;
-        }
-        ++size_;
+        static_cast<value_type &>(entry).~value_type();
+        --size_;
+        entry.state = state::unused;
       }
+      if constexpr (std::is_rvalue_reference_v<decltype(other)>) {
+        new (entry.storage) value_type{std::move(static_cast<value_type &>(*in))};
+      } else {
+        new (entry.storage) value_type{static_cast<value_type const &>(*in)};
+      }
+      if (entry.state == state::tombstone) {
+        --tombstones_;
+      }
+      ++size_;
       break;
 
     case state::tombstone:
       if (entry.state == state::occupied) {
-        entry.cast()->~value_type();
+        static_cast<value_type &>(entry).~value_type();
         --size_;
       }
       if (entry.state != state::tombstone) {
@@ -344,7 +351,7 @@ auto iumap<Key, Mapped, Size, Hash, KeyEqual>::operator=(iumap const &other) -> 
     case state::unused:
       switch (entry.state) {
       case state::occupied:
-        entry.cast()->~value_type();
+        static_cast<value_type &>(entry).~value_type();
         --size_;
         break;
       case state::tombstone: --tombstones_; break;
@@ -353,6 +360,7 @@ auto iumap<Key, Mapped, Size, Hash, KeyEqual>::operator=(iumap const &other) -> 
       break;
     }
     entry.state = in->state;
+    ++in;
   }
   assert(size_ == other.size_);
   assert(tombstones_ == other.tombstones_);
@@ -361,7 +369,16 @@ auto iumap<Key, Mapped, Size, Hash, KeyEqual>::operator=(iumap const &other) -> 
 
 template <typename Key, typename Mapped, std::size_t Size, typename Hash, typename KeyEqual>
   requires(is_power_of_two(Size))
+auto iumap<Key, Mapped, Size, Hash, KeyEqual>::operator=(iumap const &other) -> iumap & {
+  return this->assign(other);
+}
+
+template <typename Key, typename Mapped, std::size_t Size, typename Hash, typename KeyEqual>
+  requires(is_power_of_two(Size))
 auto iumap<Key, Mapped, Size, Hash, KeyEqual>::operator=(iumap &&other) noexcept -> iumap & {
+#if 1
+  return this->assign(std::move(other));
+#else
   if (this == &other) {
     return *this;
   }
@@ -406,6 +423,7 @@ auto iumap<Key, Mapped, Size, Hash, KeyEqual>::operator=(iumap &&other) noexcept
   }
   assert(size_ == other.size_);
   assert(tombstones_ == other.tombstones_);
+#endif
   return *this;
 }
 
