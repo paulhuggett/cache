@@ -60,7 +60,7 @@ jobs:
             build_type: RelWithDebug
             cxx_compiler: -D CMAKE_CXX_COMPILER=g++-13 -D CMAKE_C_COMPILER=gcc-13
             gcc_install: 13
-            options: -D MIDI2_SANITIZE=Yes
+            options: -D SANITIZE=Yes
             generator: Unix Makefiles
             os: ubuntu-22.04
             package: TGZ
@@ -80,7 +80,7 @@ jobs:
             build_type: Debug
             cxx_compiler: -D CMAKE_CXX_COMPILER=clang++-16 -D CMAKE_C_COMPILER=clang-16
             generator: Ninja
-            options: -D MIDI2_SANITIZE=Yes
+            options: -D SANITIZE=Yes
             os: ubuntu-22.04
             package: TGZ
 
@@ -100,7 +100,7 @@ jobs:
             build_type: Debug
             cxx_compiler: -D CMAKE_CXX_COMPILER=clang++-18 -D CMAKE_C_COMPILER=clang-18
             generator: Ninja
-            options: -D MIDI2_SANITIZE=Yes
+            options: -D SANITIZE=Yes
             os: ubuntu-22.04
             package: TGZ
 
@@ -170,7 +170,7 @@ jobs:
                 -B "${{ github.workspace }}/build"           \
                 -G "${{ matrix.generator }}"                 \
                 -D CMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-                -D MIDI2_WERROR=Yes                          \
+                -D WERROR=Yes                                \
                 ${{ matrix.cxx_compiler }}                   \
                 ${{ matrix.options }}
 

@@ -38,7 +38,7 @@ jobs:
             -G Ninja                                 \
             -S .                                     \
             -B "$BUILD_DIR"                          \
-            -D MIDI2_COVERAGE=Yes                    \
+            -D COVERAGE=Yes                          \
             -D CMAKE_C_COMPILER="gcc-$GCC_VERSION"   \
             -D CMAKE_CXX_COMPILER="g++-$GCC_VERSION"
 
