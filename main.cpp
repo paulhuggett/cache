@@ -11,8 +11,6 @@
 #include "iumap.hpp"
 #include "lru_list.hpp"
 
-namespace {
-
 int main() {
 #if 0
   using kvp = std::pair<int, std::string>;
