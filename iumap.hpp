@@ -545,8 +545,7 @@ auto *iumap<Key, Mapped, Size, Hash, KeyEqual>::find_insert_slot(Container &cont
   auto pos = Hash{}(key) % size;  // The probing position.
   slot_type *first_tombstone = nullptr;
   for (auto iteration = 1U; iteration <= size; ++iteration) {
-    slot_type *slot = &container.v_[pos];
-    switch (slot->state) {
+    switch (slot_type *const slot = &container.v_[pos]; slot->state) {
     case state::tombstone:
       if (first_tombstone == nullptr) {
         // Remember this tombstone's slot so it can be returned later.
