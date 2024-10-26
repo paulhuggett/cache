@@ -1,0 +1,74 @@
+name: CodeCov
+
+on:
+  push:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  codecov:
+    name: Build
+    runs-on: ubuntu-latest
+    env:
+      BUILD_DIR: build_codecov
+      GCC_VERSION: 12
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        with:
+          submodules: 'True'
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake "g++-$GCC_VERSION" lcov ninja-build
+
+      - name: Configure Build
+        run: |
+          mkdir "$BUILD_DIR"
+          cmake                                      \
+            -G Ninja                                 \
+            -S .                                     \
+            -B "$BUILD_DIR"                          \
+            -D MIDI2_COVERAGE=Yes                    \
+            -D CMAKE_C_COMPILER="gcc-$GCC_VERSION"   \
+            -D CMAKE_CXX_COMPILER="g++-$GCC_VERSION"
+
+      - name: Build
+        run: cmake --build "$BUILD_DIR"
+
+      - name: Run the Test Binaries
+        run: |
+          ctest                      \
+            --test-dir "$BUILD_DIR"  \
+            --output-junit junit.xml \
+            --verbose
+
+      - name: Collect the Coverage
+        run: |
+          set -x
+          lcov                              \
+            --capture                       \
+            --output-file coverage.info     \
+            --directory "$BUILD_DIR"        \
+            --gcov-tool "gcov-$GCC_VERSION"
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4.6.0
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@9739113ad922ea0a9abb4b2c0f8bf6a4aa8ef820 #v1.0.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
