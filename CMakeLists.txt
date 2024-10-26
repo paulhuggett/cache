@@ -3,6 +3,7 @@ project (cache)
 
 include (CheckCXXCompilerFlag)
 include (CheckLinkerFlag)
+include (CTest)
 
 
 option (COVERAGE "Enable code coverage" No)

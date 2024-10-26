@@ -1,6 +1,3 @@
-include (GoogleTest)
-
-
 add_executable (unittests test_lru.cpp test_iumap.cpp)
 setup_target(unittests)
 target_include_directories(unittests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/..")
@@ -17,11 +14,12 @@ target_compile_options (
     $<$<CXX_COMPILER_ID:MSVC>:${msvc_options}>
 )
 
-gtest_discover_tests (unittests)
-
 if (FUZZTEST)
   target_link_libraries (unittests PRIVATE gtest gmock)
   link_fuzztest (unittests)
 else ()
   target_link_libraries (unittests PRIVATE gmock_main)
 endif (FUZZTEST)
+
+include(GoogleTest)
+gtest_discover_tests(unittests)
