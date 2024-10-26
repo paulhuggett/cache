@@ -218,11 +218,26 @@ TEST(IUMap, IteratorAdd) {
   a.try_emplace(2, 2);
   a.try_emplace(3, 3);
   auto pos = a.begin();
-  pos += 2;
+  pos++;
+  pos += 1;
   pos += -2;
   pos = pos + 2;
   pos = pos - 2;
   EXPECT_EQ(pos, a.begin());
+}
+
+TEST(IUMap, IteratorSubtract) {
+  iumap<int, int, 4> a;
+  a.try_emplace(1, 1);
+  a.try_emplace(2, 2);
+  a.try_emplace(3, 3);
+  auto pos = a.end();
+  pos--;
+  pos -= 1;
+  pos -= -2;
+  pos = pos - 2;
+  pos = pos + 2;
+  EXPECT_EQ(pos, a.end());
 }
 
 void Thrash(std::vector<int> const &in, std::vector<int> const &del) {
