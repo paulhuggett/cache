@@ -212,22 +212,36 @@ TEST(IUMap, MoveCtor) {
   EXPECT_EQ(*b.find(3), three);
 }
 
+TEST(IUMap, IteratorAdd) {
+  iumap<int, int, 4> a;
+  a.try_emplace(1, 1);
+  a.try_emplace(2, 2);
+  a.try_emplace(3, 3);
+  auto pos = a.begin();
+  pos += 2;
+  pos += -2;
+  pos = pos + 2;
+  pos = pos - 2;
+  EXPECT_EQ(pos, a.begin());
+}
+
 void Thrash(std::vector<int> const &in, std::vector<int> const &del) {
   iumap<int, int, 16> a;
   std::unordered_map<int, int> b;
 
-  for (int a1 : in) {
+  for (int const a1 : in) {
     if (a.size() >= a.max_size()) {
       break;
     }
-    a.insert(std::make_pair(a1, a1));
-    b.insert(std::make_pair(a1, a1));
+    auto const value = std::make_pair(a1, a1);
+    a.insert(value);
+    b.insert(value);
   }
-  for (int d1 : del) {
-    if (auto apos = a.find(d1); apos != a.end()) {
+  for (int const d1 : del) {
+    if (auto const apos = a.find(d1); apos != a.end()) {
       a.erase(apos);
     }
-    if (auto bpos = b.find(d1); bpos != b.end()) {
+    if (auto const bpos = b.find(d1); bpos != b.end()) {
       b.erase(bpos);
     }
   }
