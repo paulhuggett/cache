@@ -1,4 +1,4 @@
-add_executable (unittests test_lru.cpp test_iumap.cpp)
+add_executable (unittests test_cache.cpp test_lru.cpp test_iumap.cpp)
 setup_target(unittests)
 target_include_directories(unittests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/..")
 

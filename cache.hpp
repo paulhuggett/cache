@@ -16,13 +16,14 @@
 #include "iumap.hpp"
 #include "lru_list.hpp"
 
-template <typename Key, typename Value, std::size_t Size> class cache {
+template <typename Key, typename Mapped, std::size_t Size> class cache {
 public:
   using key_type = Key;
-  using value_type = Value;
+  using mapped_type = Mapped;
+  using value_type = std::pair<key_type, mapped_type>;
 
-  value_type *find(key_type const &k);
-  bool set(key_type const &k, value_type const &v);
+  mapped_type *find(key_type const &k);
+  bool set(key_type const &k, mapped_type const &v);
 
   void dump(std::ostream &os) {
     lru.dump(os);
@@ -30,29 +31,29 @@ public:
   }
 
 private:
-  using lru_container = lru_list<std::pair<Key, Value>, Size>;
+  using lru_container = lru_list<value_type, Size>;
 
   lru_container lru;
   iumap<Key const, typename decltype(lru)::node *, Size> h;
 };
 
-template <typename Key, typename Value, std::size_t Size>
-auto cache<Key, Value, Size>::find(key_type const &k) -> value_type * {
+template <typename Key, typename Mapped, std::size_t Size>
+auto cache<Key, Mapped, Size>::find(key_type const &k) -> mapped_type * {
   auto const pos = h.find(k);
   if (pos == h.end()) {
     return nullptr;
   }
   auto *const node = pos->second;
-  lru.touch(node);
+  lru.touch(*node);
   assert(lru.size() == h.size());
-  return &(node->value()->second);
+  return &(static_cast<value_type &>(*node).second);
 }
 
-template <typename Key, typename Value, std::size_t Size>
-bool cache<Key, Value, Size>::set(key_type const &k, value_type const &v) {
+template <typename Key, typename Mapped, std::size_t Size>
+bool cache<Key, Mapped, Size>::set(key_type const &k, mapped_type const &v) {
   auto pos = h.find(k);
   if (pos == h.end()) {
-    auto const fn = [this](std::pair<key_type, value_type> & kvp) {
+    auto const fn = [this](value_type &kvp) {
       // delete the key being evicted from the LUR-list from the hash table so that
       // they always match.
       if (auto const evict_pos = this->h.find(kvp.first); evict_pos != this->h.end()) {
@@ -67,7 +68,7 @@ bool cache<Key, Value, Size>::set(key_type const &k, value_type const &v) {
   // The key _was_ found in the cache.
   typename lru_container::node &lru_entry = *pos->second;
   lru.touch(lru_entry);
-  auto &cached_value = static_cast<std::pair<Key, Value> &>(lru_entry).second;
+  auto &cached_value = static_cast<value_type &>(lru_entry).second;
   if (cached_value == v) {
     // The key was in the cache and the values are equal.
     assert(lru.size() == h.size());
