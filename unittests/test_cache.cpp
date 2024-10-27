@@ -49,6 +49,9 @@ TEST(Cache, FindEvicted) {
   EXPECT_THAT(c.find(3), Pointee(30));
   EXPECT_THAT(c.find(4), Pointee(40));
   EXPECT_THAT(c.find(5), Pointee(50));
+
+  EXPECT_FALSE(c.set(5, 60)) << "value is different so not cached";
+  EXPECT_TRUE(c.set(5, 60));
 }
 
 } // end anonymous namespace
